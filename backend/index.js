@@ -62,6 +62,38 @@ app.get("/tasks", async (req, res) => {
 });
 
 /* -------------------- START SERVER -------------------- */
+
+app.patch("/tasks/:id", async (req, res) => {
+  const { id } = req.params;
+  const { actual_minutes, completed } = req.body;
+
+  if (actual_minutes == null || completed == null) {
+    return res.status(400).json({
+      error: "actual_minutes and completed are required"
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE tasks
+       SET actual_minutes = $1,
+           completed = $2
+       WHERE id = $3
+       RETURNING *`,
+      [actual_minutes, completed, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update task" });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
